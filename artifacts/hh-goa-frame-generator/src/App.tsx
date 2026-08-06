@@ -8,6 +8,7 @@ import {
   Check,
   Crop as CropIcon,
   Download,
+  ExternalLink,
   FileImage,
   Info,
   Loader2,
@@ -801,9 +802,23 @@ function App() {
             <small>Goa / 2026</small>
           </span>
         </div>
-        <div className="topbar-meta" data-testid="text-event-meta">
-          <span>GOA, INDIA</span>
-          <strong>28—31 OCT 2026</strong>
+        <div className="topbar-right">
+          <a
+            href="https://hhgoa.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="topbar-event-link"
+            data-testid="link-event-website"
+            title="Visit official Hacker House Goa event website"
+          >
+            <span>Event Website</span>
+            <strong>hhgoa.com</strong>
+            <ExternalLink size={13} />
+          </a>
+          <div className="topbar-meta" data-testid="text-event-meta">
+            <span>GOA, INDIA</span>
+            <strong>28—31 OCT 2026</strong>
+          </div>
         </div>
       </header>
 
