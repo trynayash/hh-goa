@@ -764,8 +764,8 @@ function App() {
     if (!canvasRef.current || !photo) return;
     const shareText =
       format === "frame"
-        ? "Just generated my official Hacker House Goa 2026 Profile Frame! 🌴🔥 #FrameInGoa\n\nGenerate yours at https://goa-hh.vercel.app"
-        : `I am headed to Hacker House Goa 2026 as ${name.trim() || "a builder"}${role.trim() ? ` (${builderTitle})` : ""}! 🌴🚀 #FrameInGoa\n\nGenerate your ID Card at https://goa-hh.vercel.app`;
+        ? "Framed for Hacker House Goa 2026.\n\nGenerate your frame: https://hhgoa.com\n#FrameInGoa"
+        : `Heading to Hacker House Goa 2026 as ${name.trim() || "a builder"}${role.trim() ? ` (${builderTitle})` : ""}.\n\nGenerate your ID card: https://hhgoa.com\n#FrameInGoa`;
 
     try {
       const blob = await new Promise<Blob | null>((resolve) =>
