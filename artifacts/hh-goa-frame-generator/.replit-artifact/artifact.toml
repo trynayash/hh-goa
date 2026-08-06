@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "HH Goa 2026 Frame Generator"
+description = "A mobile-first client-side generator for branded HH Goa 2026 profile frames and builder ID cards. Users can upload a photo, personalize their badge, render instantly, download the final image, and share it to X without signing in."
+version = "1.0.0"
+id = "artifacts/hh-goa-frame-generator"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25136
+
+[services.development]
+run = "pnpm --filter @workspace/hh-goa-frame-generator run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hh-goa-frame-generator", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hh-goa-frame-generator/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25136"
+BASE_PATH = "/"
