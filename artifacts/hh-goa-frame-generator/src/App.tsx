@@ -14,7 +14,6 @@ import {
   Move,
   RotateCcw,
   Share2,
-  Sparkles,
   Upload,
 } from 'lucide-react';
 import bannerAsset from '@assets/bANNER_1785999397328.webp';
@@ -262,14 +261,11 @@ function renderFrame(
     context.fillText('28—31 OCT 2026', 222, 126);
     drawSmallType(context, '#FrameInGoa', 1350, 76, COLORS.cream, 'right');
 
-    context.strokeStyle = COLORS.yellow;
-    context.lineWidth = 14;
-    context.strokeRect(35, 35, width - 70, height - 70);
     context.strokeStyle = COLORS.pink;
-    context.lineWidth = 4;
-    context.strokeRect(58, 58, width - 116, height - 116);
+    context.lineWidth = 12;
+    context.strokeRect(40, 40, width - 80, height - 80);
     drawDots(context, 92, 226, 7, COLORS.pink);
-    drawDots(context, 92, 1232, 7, COLORS.yellow);
+    drawDots(context, 92, 1232, 7, COLORS.pink);
 
     context.fillStyle = 'rgba(7, 55, 35, .92)';
     roundedRect(context, 88, 1080, 1224, 225, 8);
@@ -278,7 +274,7 @@ function renderFrame(
     context.fillRect(88, 1080, 18, 225);
     if (brandImages.banner) {
       drawContain(context, brandImages.banner, 1070, 1100, 210, 175, COLORS.green);
-      context.strokeStyle = COLORS.yellow;
+      context.strokeStyle = COLORS.pink;
       context.lineWidth = 3;
       context.strokeRect(1070, 1100, 210, 175);
     }
@@ -295,7 +291,7 @@ function renderFrame(
   context.fillRect(0, 0, width, height);
   context.fillStyle = COLORS.green;
   context.fillRect(28, 28, width - 56, height - 56);
-  context.strokeStyle = COLORS.yellow;
+  context.strokeStyle = COLORS.pink;
   context.lineWidth = 6;
   context.strokeRect(48, 48, width - 96, height - 96);
 
@@ -310,11 +306,8 @@ function renderFrame(
   context.fillStyle = photoWash;
   context.fillRect(photoX, photoY, photoWidth, photoHeight);
   context.strokeStyle = COLORS.pink;
-  context.lineWidth = 6;
+  context.lineWidth = 8;
   context.strokeRect(photoX, photoY, photoWidth, photoHeight);
-  context.strokeStyle = COLORS.yellow;
-  context.lineWidth = 2;
-  context.strokeRect(photoX + 14, photoY + 14, photoWidth - 28, photoHeight - 28);
 
   const infoX = 802;
   const infoRight = 1518;
@@ -861,7 +854,7 @@ function App() {
       </section>
 
       <footer className="footer-note">
-        <span><Sparkles size={13} style={{ verticalAlign: 'middle', marginRight: 6 }} /> made for builders, not databases</span>
+        <span>Built by Yash Suthar</span>
         <strong>#FrameInGoa</strong>
       </footer>
     </main>
