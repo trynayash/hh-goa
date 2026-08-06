@@ -767,22 +767,13 @@ function App() {
         ? "Framed for Hacker House Goa 2026. #FrameInGoa\n\nGenerate your frame & ID card: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com"
         : `Heading to Hacker House Goa 2026 as ${name.trim() || "a builder"}${role.trim() ? ` (${builderTitle})` : ""}. #FrameInGoa\n\nGenerate your ID card & frame: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com`;
 
-    download();
     const target = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
-    const popup = window.open(
-      target,
-      "_blank",
-      "noopener,noreferrer,width=640,height=520",
+    window.open(target, "_blank", "noopener,noreferrer");
+
+    download();
+    setNotice(
+      "X compose opened in a new tab & graphic saved to your downloads! Attach your saved graphic to your post.",
     );
-    if (!popup) {
-      setNotice(
-        "Image downloaded! Allow pop-ups for this site to open X compose in a new tab.",
-      );
-    } else {
-      setNotice(
-        "Image downloaded & X compose opened in a new tab! Attach your saved graphic to your post.",
-      );
-    }
   };
 
   const hasCardDetails =
