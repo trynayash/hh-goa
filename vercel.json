@@ -1,4 +1,5 @@
 {
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm run build:frontend",
   "outputDirectory": "artifacts/hh-goa-frame-generator/dist/public",
   "framework": "vite",
