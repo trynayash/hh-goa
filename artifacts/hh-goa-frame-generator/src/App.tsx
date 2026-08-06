@@ -670,6 +670,7 @@ function App() {
                 >
                   choose from device
                 </button>
+                <p className="upload-resolution-hint">💡 Recommended: 1400 × 1400 px or higher for best export clarity</p>
               </div>
             </div>
           ) : (

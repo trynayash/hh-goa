@@ -1276,3 +1276,17 @@
   .workspace { padding-left: 48px; padding-right: 48px; }
   .footer-note { padding-left: 48px; padding-right: 48px; }
 }
+
+.upload-resolution-hint {
+  font-family: var(--app-font-mono);
+  font-size: 11.5px;
+  color: #8fbe6d;
+  background: rgba(143, 190, 109, 0.08);
+  border: 1px dashed rgba(143, 190, 109, 0.3);
+  padding: 8px 14px;
+  border-radius: 6px;
+  margin-top: 10px;
+  margin-bottom: 0;
+  text-align: center;
+  line-height: 1.4;
+}
