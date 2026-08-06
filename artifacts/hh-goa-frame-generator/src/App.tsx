@@ -10,6 +10,7 @@ import {
   Download,
   FileImage,
   Info,
+  Loader2,
   Monitor,
   Move,
   RotateCcw,
@@ -18,6 +19,9 @@ import {
 } from "lucide-react";
 import bannerAsset from "@assets/bANNER_1785999397328.webp";
 import logoAsset from "@assets/logo_1785999397329.webp";
+import { useShare } from "./hooks/useShare";
+import { ShareToast } from "./components/ShareToast";
+import { ShareModal } from "./components/ShareModal";
 
 type Format = "frame" | "card";
 
@@ -760,20 +764,25 @@ function App() {
     }, "image/png");
   };
 
+  const {
+    isSharing,
+    toastMessage,
+    showModal,
+    lastOptions,
+    copied,
+    handleShare,
+    closeModal,
+    closeToast,
+    copyCaptionToClipboard,
+  } = useShare();
+
   const share = () => {
-    if (!canvasRef.current || !photo) return;
-    const shareText =
-      format === "frame"
-        ? "Framed for Hacker House Goa 2026. #FrameInGoa\n\nGenerate your frame & ID card: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com"
-        : `Heading to Hacker House Goa 2026 as ${name.trim() || "a builder"}${role.trim() ? ` (${builderTitle})` : ""}. #FrameInGoa\n\nGenerate your ID card & frame: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com`;
-
-    const target = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
-    window.open(target, "_blank", "noopener,noreferrer");
-
-    download();
-    setNotice(
-      "X compose opened in a new tab & graphic saved to your downloads! Attach your saved graphic to your post.",
-    );
+    handleShare(canvasRef.current, {
+      format,
+      name,
+      role,
+      builderTitle,
+    });
   };
 
   const hasCardDetails =
@@ -1246,11 +1255,20 @@ function App() {
                 isLoadingFile ||
                 isRendering ||
                 !brandsReady ||
-                !hasCardDetails
+                !hasCardDetails ||
+                isSharing
               }
               data-testid="button-share"
             >
-              <Share2 size={17} /> share on X
+              {isSharing ? (
+                <>
+                  <Loader2 size={17} className="animate-spin" /> preparing...
+                </>
+              ) : (
+                <>
+                  <Share2 size={17} /> share on X
+                </>
+              )}
             </button>
           </div>
           {notice && (
@@ -1281,6 +1299,15 @@ function App() {
         <span>Built by Yash Suthar</span>
         <strong>#FrameInGoa</strong>
       </footer>
+
+      <ShareToast message={toastMessage} onClose={closeToast} />
+      <ShareModal
+        isOpen={showModal}
+        options={lastOptions}
+        copied={copied}
+        onClose={closeModal}
+        onCopyCaption={copyCaptionToClipboard}
+      />
     </main>
   );
 }

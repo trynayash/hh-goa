@@ -1290,3 +1290,246 @@
   text-align: center;
   line-height: 1.4;
 }
+
+/* Toast Notification Styles */
+.share-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  background: #0d281a;
+  border: 1px solid #ffe400;
+  color: #fff4c8;
+  padding: 14px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-family: var(--app-font-mono);
+  font-size: 13px;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+.share-toast-icon {
+  color: #8fbe6d;
+  flex-shrink: 0;
+}
+
+.share-toast-text {
+  flex-grow: 1;
+}
+
+.share-toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 244, 200, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.share-toast-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Overlay & Card Styles */
+.share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(5, 25, 14, 0.82);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.share-modal-content {
+  background: #0b3620;
+  border: 2px solid #ffe400;
+  border-radius: 20px;
+  max-width: 540px;
+  width: 100%;
+  padding: 28px;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  color: #fff4c8;
+}
+
+.share-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 244, 200, 0.1);
+  border: none;
+  color: #fff4c8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.share-modal-close:hover {
+  background: #f7087d;
+  color: #fff;
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.share-modal-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #076b3b;
+  border: 1px solid #ffe400;
+  color: #ffe400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.share-modal-title {
+  font-family: var(--app-font-display);
+  font-size: 24px;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.share-modal-subtitle {
+  font-family: var(--app-font-sans);
+  font-size: 13px;
+  color: #8fbe6d;
+  margin: 0;
+}
+
+.share-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.share-step-card {
+  background: rgba(7, 55, 35, 0.6);
+  border: 1px solid rgba(255, 228, 0, 0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.share-step-card.highlight {
+  background: rgba(247, 8, 125, 0.12);
+  border-color: #f7087d;
+}
+
+.step-num {
+  font-family: var(--app-font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: #ffe400;
+  background: rgba(255, 228, 0, 0.15);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-icon {
+  color: #8fbe6d;
+  display: flex;
+  align-items: center;
+}
+
+.step-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.step-content strong {
+  font-size: 14px;
+  color: #fff;
+}
+.step-content span {
+  font-size: 12px;
+  color: rgba(255, 244, 200, 0.7);
+}
+
+.step-filename {
+  font-family: var(--app-font-mono);
+  color: #ffe400 !important;
+}
+
+.step-status {
+  font-family: var(--app-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #076b3b;
+  color: #ffe400;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.caption-preview-box {
+  background: rgba(5, 25, 14, 0.6);
+  border: 1px solid rgba(255, 244, 200, 0.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+
+.caption-label {
+  font-family: var(--app-font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #8fbe6d;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.caption-text {
+  font-family: var(--app-font-sans);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #fff4c8;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.share-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
