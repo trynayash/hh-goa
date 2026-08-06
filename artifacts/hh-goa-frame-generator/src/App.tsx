@@ -9,6 +9,8 @@ import {
   Sparkles,
   Upload,
 } from 'lucide-react';
+import bannerAsset from '@assets/bANNER_1785999397328.webp';
+import logoAsset from '@assets/logo_1785999397329.webp';
 
 type Format = 'frame' | 'card';
 
@@ -20,11 +22,33 @@ type Photo = {
   height: number;
 };
 
+type BrandImages = {
+  banner: HTMLImageElement | null;
+  logo: HTMLImageElement | null;
+};
+
 const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
+const COLORS = {
+  green: '#076b3b',
+  ink: '#123d28',
+  yellow: '#ffe400',
+  pink: '#f7087d',
+  lime: '#8fbe6d',
+  cream: '#fff4c8',
+};
 
 function isAcceptedFile(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   return file.type.startsWith('image/') || ACCEPTED_EXTENSIONS.includes(extension);
+}
+
+function loadBrandImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Could not load ${src}`));
+    image.src = src;
+  });
 }
 
 function drawCover(
@@ -53,6 +77,23 @@ function drawCover(
   }
 
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+
+function drawContain(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  background = COLORS.green,
+) {
+  context.fillStyle = background;
+  context.fillRect(x, y, width, height);
+  const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
 function roundedRect(
@@ -84,9 +125,31 @@ function drawSmallType(
   context.fillStyle = color;
   context.font = '500 18px "DM Mono", monospace';
   context.textAlign = align;
-  context.letterSpacing = '2px';
   context.fillText(text, x, y);
-  context.letterSpacing = '0px';
+}
+
+function drawDots(context: CanvasRenderingContext2D, x: number, y: number, count: number, color: string) {
+  context.fillStyle = color;
+  for (let index = 0; index < count; index += 1) {
+    context.beginPath();
+    context.arc(x + index * 26, y, 4, 0, Math.PI * 2);
+    context.fill();
+  }
+}
+
+function drawBrandLogo(
+  context: CanvasRenderingContext2D,
+  logo: HTMLImageElement | null,
+  x: number,
+  y: number,
+  size: number,
+) {
+  if (!logo) return;
+  context.save();
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(logo, x, y, size, size);
+  context.restore();
 }
 
 function renderFrame(
@@ -95,10 +158,11 @@ function renderFrame(
   format: Format,
   name: string,
   role: string,
+  brandImages: BrandImages,
 ) {
   const isCard = format === 'card';
   const width = isCard ? 1000 : 1400;
-  const height = isCard ? 1400 : 1400;
+  const height = 1400;
   const context = canvas.getContext('2d');
   if (!context) return;
   canvas.width = width;
@@ -110,119 +174,91 @@ function renderFrame(
   if (!isCard) {
     drawCover(context, photo.image, 0, 0, width, height);
     const wash = context.createLinearGradient(0, 0, width, height);
-    wash.addColorStop(0, 'rgba(8, 22, 48, .17)');
-    wash.addColorStop(.48, 'rgba(8, 22, 48, .04)');
-    wash.addColorStop(1, 'rgba(8, 22, 48, .6)');
+    wash.addColorStop(0, 'rgba(7, 107, 59, .10)');
+    wash.addColorStop(.58, 'rgba(7, 107, 59, .03)');
+    wash.addColorStop(1, 'rgba(7, 55, 35, .72)');
     context.fillStyle = wash;
     context.fillRect(0, 0, width, height);
 
-    context.strokeStyle = '#6ff0de';
+    context.fillStyle = COLORS.green;
+    context.fillRect(0, 0, width, 180);
+    context.fillStyle = COLORS.yellow;
+    context.fillRect(0, 180, width, 10);
+    drawBrandLogo(context, brandImages.logo, 45, 18, 144);
+    drawSmallType(context, 'HACKER HOUSE GOA', 222, 76, COLORS.cream);
+    context.font = '600 36px "Fraunces", Georgia, serif';
+    context.textAlign = 'left';
+    context.fillStyle = COLORS.yellow;
+    context.fillText('28—31 OCT 2026', 222, 126);
+    drawSmallType(context, '#FrameInGoa', 1350, 76, COLORS.cream, 'right');
+
+    context.strokeStyle = COLORS.yellow;
     context.lineWidth = 14;
     context.strokeRect(35, 35, width - 70, height - 70);
-    context.strokeStyle = 'rgba(255, 219, 135, .86)';
-    context.lineWidth = 3;
-    context.strokeRect(57, 57, width - 114, height - 114);
+    context.strokeStyle = COLORS.pink;
+    context.lineWidth = 4;
+    context.strokeRect(58, 58, width - 116, height - 116);
+    drawDots(context, 92, 226, 7, COLORS.pink);
+    drawDots(context, 92, 1232, 7, COLORS.yellow);
 
-    context.save();
-    context.translate(1190, 205);
-    context.rotate(.18);
-    context.strokeStyle = '#ff815b';
-    context.lineWidth = 8;
-    context.beginPath();
-    context.arc(0, 0, 105, -.8, 2.3);
-    context.stroke();
-    context.strokeStyle = 'rgba(255, 219, 135, .8)';
-    context.lineWidth = 2;
-    context.beginPath();
-    context.arc(0, 0, 123, -.7, 2.1);
-    context.stroke();
-    context.restore();
-
-    context.fillStyle = 'rgba(8, 22, 48, .84)';
-    roundedRect(context, 88, 1060, 1224, 245, 16);
+    context.fillStyle = 'rgba(7, 55, 35, .92)';
+    roundedRect(context, 88, 1080, 1224, 225, 8);
     context.fill();
-    context.fillStyle = '#ff815b';
-    context.fillRect(88, 1060, 17, 245);
-    drawSmallType(context, 'HH GOA / 2026', 145, 1134, '#6ff0de');
-    context.fillStyle = '#fff3d5';
-    context.font = '700 72px "Space Grotesk", sans-serif';
+    context.fillStyle = COLORS.pink;
+    context.fillRect(88, 1080, 18, 225);
+    if (brandImages.banner) {
+      drawContain(context, brandImages.banner, 1070, 1100, 210, 175, COLORS.green);
+      context.strokeStyle = COLORS.yellow;
+      context.lineWidth = 3;
+      context.strokeRect(1070, 1100, 210, 175);
+    }
+    drawSmallType(context, 'HACKER HOUSE / GOA, INDIA', 145, 1150, COLORS.lime);
+    context.fillStyle = COLORS.cream;
+    context.font = '700 72px "Fraunces", Georgia, serif';
     context.textAlign = 'left';
-    context.fillText('FRAME IN GOA', 145, 1220);
-    drawSmallType(context, '#FrameInGoa', 1255, 1254, '#ffdb87', 'right');
-
-    context.save();
-    context.strokeStyle = 'rgba(111, 240, 222, .85)';
-    context.lineWidth = 5;
-    context.setLineDash([12, 14]);
-    context.beginPath();
-    context.moveTo(102, 220);
-    context.bezierCurveTo(285, 410, 164, 585, 370, 740);
-    context.bezierCurveTo(529, 860, 630, 726, 775, 842);
-    context.stroke();
-    context.restore();
-    context.fillStyle = '#ffdb87';
-    context.beginPath();
-    context.arc(370, 740, 12, 0, Math.PI * 2);
-    context.fill();
-    drawSmallType(context, 'BUILDERS ON THE COAST', 101, 170, '#fff3d5');
-    drawSmallType(context, '01 / KEEP THIS ONE', 1298, 100, '#fff3d5', 'right');
+    context.fillText('FRAME IN GOA', 145, 1235);
+    drawSmallType(context, '#FrameInGoa', 1035, 1270, COLORS.yellow, 'right');
     return;
   }
 
-  context.fillStyle = '#fff3d5';
+  context.fillStyle = COLORS.cream;
   context.fillRect(0, 0, width, height);
-  context.fillStyle = '#10203e';
-  context.fillRect(0, 0, width, 790);
-  drawCover(context, photo.image, 32, 32, width - 64, 726, .5, .44);
-  context.fillStyle = 'rgba(16, 32, 62, .18)';
-  context.fillRect(32, 32, width - 64, 726);
-
-  context.strokeStyle = '#6ff0de';
+  context.fillStyle = COLORS.green;
+  context.fillRect(0, 0, width, 770);
+  drawCover(context, photo.image, 32, 32, width - 64, 706, .5, .44);
+  context.fillStyle = 'rgba(7, 107, 59, .14)';
+  context.fillRect(32, 32, width - 64, 706);
+  context.strokeStyle = COLORS.yellow;
   context.lineWidth = 8;
-  context.strokeRect(32, 32, width - 64, 726);
-  context.strokeStyle = '#ff815b';
+  context.strokeRect(32, 32, width - 64, 706);
+  context.strokeStyle = COLORS.pink;
   context.lineWidth = 3;
-  context.strokeRect(51, 51, width - 102, 688);
-  drawSmallType(context, 'HH GOA 2026', 76, 102, '#fff3d5');
-  drawSmallType(context, 'BUILDER ID / 026', 924, 102, '#6ff0de', 'right');
+  context.strokeRect(51, 51, width - 102, 668);
+  drawBrandLogo(context, brandImages.logo, 68, 68, 115);
+  drawSmallType(context, 'HACKER HOUSE GOA', 205, 110, COLORS.cream);
+  drawSmallType(context, 'BUILDER ID / 026', 932, 110, COLORS.yellow, 'right');
 
-  context.fillStyle = '#10203e';
-  context.fillRect(0, 790, width, 610);
-  context.fillStyle = '#ff815b';
-  context.fillRect(0, 790, width, 18);
-  context.fillStyle = '#6ff0de';
-  context.beginPath();
-  context.arc(850, 1070, 175, 0, Math.PI * 2);
-  context.fill();
-  context.fillStyle = '#10203e';
-  context.beginPath();
-  context.arc(850, 1070, 131, 0, Math.PI * 2);
-  context.fill();
-  context.strokeStyle = '#ffdb87';
-  context.lineWidth = 4;
-  context.beginPath();
-  context.arc(850, 1070, 190, -.8, 1.5);
-  context.stroke();
-  context.save();
-  context.strokeStyle = 'rgba(255, 219, 135, .45)';
-  context.lineWidth = 3;
-  context.setLineDash([8, 12]);
-  context.beginPath();
-  context.moveTo(61, 1244);
-  context.bezierCurveTo(270, 1140, 300, 1330, 520, 1238);
-  context.stroke();
-  context.restore();
-  drawSmallType(context, 'NAME / STACK', 76, 894, '#6ff0de');
-  context.fillStyle = '#fff3d5';
-  context.font = '700 74px "Space Grotesk", sans-serif';
+  context.fillStyle = COLORS.green;
+  context.fillRect(0, 770, width, 630);
+  context.fillStyle = COLORS.pink;
+  context.fillRect(0, 770, width, 18);
+  if (brandImages.banner) {
+    drawContain(context, brandImages.banner, 56, 816, 888, 176, COLORS.green);
+    context.strokeStyle = COLORS.yellow;
+    context.lineWidth = 3;
+    context.strokeRect(56, 816, 888, 176);
+  }
+  drawSmallType(context, 'NAME / STACK', 76, 1050, COLORS.lime);
+  context.fillStyle = COLORS.cream;
+  context.font = '700 72px "Fraunces", Georgia, serif';
   context.textAlign = 'left';
   const safeName = name.trim() || 'YOUR NAME';
-  context.fillText(safeName.slice(0, 18), 76, 1005);
-  context.fillStyle = '#ffdb87';
-  context.font = '500 34px "DM Mono", monospace';
-  context.fillText((role.trim() || 'BUILDER / MAKER').slice(0, 26), 76, 1076);
-  drawSmallType(context, 'MADE IN GOA', 76, 1325, '#fff3d5');
-  drawSmallType(context, '#FrameInGoa', 924, 1325, '#ffdb87', 'right');
+  context.fillText(safeName.slice(0, 18), 76, 1152);
+  context.fillStyle = COLORS.yellow;
+  context.font = '500 32px "DM Mono", monospace';
+  context.fillText((role.trim() || 'BUILDER / MAKER').slice(0, 26), 76, 1218);
+  drawSmallType(context, 'GOA, INDIA · 28—31 OCT 2026', 76, 1332, COLORS.cream);
+  drawSmallType(context, '#FrameInGoa', 924, 1332, COLORS.yellow, 'right');
 }
 
 function App() {
@@ -232,6 +268,8 @@ function App() {
   const [role, setRole] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [brandsReady, setBrandsReady] = useState(false);
+  const [brandImages, setBrandImages] = useState<BrandImages>({ banner: null, logo: null });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -240,6 +278,15 @@ function App() {
   const renderFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    Promise.allSettled([loadBrandImage(bannerAsset), loadBrandImage(logoAsset)]).then((results) => {
+      const banner = results[0].status === 'fulfilled' ? results[0].value : null;
+      const logo = results[1].status === 'fulfilled' ? results[1].value : null;
+      setBrandImages({ banner, logo });
+      setBrandsReady(true);
+      if (!banner || !logo) {
+        setNotice('Some event artwork could not load, so the generator is using its accessible color fallback.');
+      }
+    });
     return () => {
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       if (renderFrameRef.current) cancelAnimationFrame(renderFrameRef.current);
@@ -247,14 +294,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!photo || !canvasRef.current) return;
+    if (!photo || !canvasRef.current || !brandsReady) return;
     setIsRendering(true);
     if (renderFrameRef.current) cancelAnimationFrame(renderFrameRef.current);
     renderFrameRef.current = requestAnimationFrame(() => {
-      renderFrame(canvasRef.current!, photo, format, name, role);
+      renderFrame(canvasRef.current!, photo, format, name, role, brandImages);
       setIsRendering(false);
     });
-  }, [photo, format, name, role]);
+  }, [photo, format, name, role, brandsReady, brandImages]);
 
   const loadFile = (file?: File) => {
     if (!file) return;
@@ -313,7 +360,7 @@ function App() {
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = href;
-      anchor.download = format === 'frame' ? 'hh-goa-2026-frame.png' : 'hh-goa-2026-builder-card.png';
+      anchor.download = format === 'frame' ? 'hacker-house-goa-2026-frame.png' : 'hacker-house-goa-2026-builder-card.png';
       anchor.click();
       URL.revokeObjectURL(href);
       setNotice('Saved to your downloads. Keep it close.');
@@ -322,8 +369,8 @@ function App() {
 
   const share = () => {
     const text = format === 'frame'
-      ? 'Just framed my HH Goa 2026 moment. #FrameInGoa'
-      : `I am headed to HH Goa 2026 as ${name.trim() || 'a builder'}. #FrameInGoa`;
+      ? 'Just framed my Hacker House Goa 2026 moment. #FrameInGoa'
+      : `I am headed to Hacker House Goa 2026 as ${name.trim() || 'a builder'}. #FrameInGoa`;
     const shareUrl = 'https://goa.hackclub.com';
     const target = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     const popup = window.open(target, '_blank', 'noopener,noreferrer,width=640,height=520');
@@ -340,28 +387,37 @@ function App() {
     <main className="app-shell">
       <header className="topbar" data-testid="header-app">
         <div className="brand-lockup" data-testid="text-brand">
-          <span className="brand-mark" aria-hidden="true">HH</span>
-          <span className="brand-text">Hack Club / Goa</span>
+          <span className="brand-image-wrap">
+            <img className="brand-image" src={logoAsset} alt="Hacker House" />
+          </span>
+          <span className="brand-copy">
+            <strong>Hacker House</strong>
+            <small>Goa / 2026</small>
+          </span>
         </div>
         <div className="topbar-meta" data-testid="text-event-meta">
-          <span>personal artifact station</span>
-          <strong>04—07 APR 2026</strong>
+          <span>GOA, INDIA</span>
+          <strong>28—31 OCT 2026</strong>
         </div>
       </header>
 
       <section className="hero-strip" aria-labelledby="page-title">
-        <p className="hero-kicker"><span className="signal-dot" aria-hidden="true" /> signal found / builders welcome</p>
-        <h1 id="page-title" className="hero-title">Make your<br /><em>Goa proof.</em></h1>
-        <p className="hero-subtitle">
-          Drop in a photo. Pick your signal. Leave with a little piece of HH Goa 2026 made entirely yours.
-        </p>
-        <div className="hero-route" aria-hidden="true">
-          <svg width="220" height="80" viewBox="0 0 220 80" fill="none">
-            <path d="M6 60C34 13 64 71 97 37C129 4 154 58 214 12" stroke="currentColor" strokeWidth="2" strokeDasharray="6 8" />
-            <circle cx="6" cy="60" r="5" fill="currentColor" />
-            <circle cx="214" cy="12" r="5" fill="#FFDB87" />
-          </svg>
+        <div className="hero-copy">
+          <p className="hero-kicker"><span className="signal-dot" aria-hidden="true" /> event poster / personal artifact</p>
+          <h1 id="page-title" className="hero-title">Make your<br /><em>Goa proof.</em></h1>
+          <p className="hero-subtitle">
+            Drop in a photo and leave with a small piece of Hacker House Goa 2026 made entirely yours.
+          </p>
+          <div className="hero-details">
+            <span>28—31 Oct 2026</span>
+            <span className="hero-details-rule" aria-hidden="true" />
+            <span>Goa, India</span>
+          </div>
         </div>
+        <figure className="hero-poster">
+          <img src={bannerAsset} alt="Hacker House Goa, India, 28–31 Oct 2026 event banner" />
+          <figcaption><span>OFFICIAL EVENT ARTWORK</span><span>HH / 026</span></figcaption>
+        </figure>
       </section>
 
       <section className="workspace" aria-label="Frame generator workspace">
@@ -498,25 +554,25 @@ function App() {
                 <p className="empty-preview-copy">Upload a photo to light up the preview. Every crop and detail is rendered on this device.</p>
               </div>
             )}
-            {photo && isRendering && (
+            {photo && (!brandsReady || isRendering) && (
               <div className="rendering-state" data-testid="status-rendering">
                 <span className="rendering-bars" aria-hidden="true"><i /><i /><i /><i /></span>
-                composing your signal
+                {!brandsReady ? 'loading event artwork' : 'composing your signal'}
               </div>
             )}
-            <canvas ref={canvasRef} className={`canvas-preview${!photo || isRendering ? ' sr-only' : ''}`} aria-label="Generated HH Goa preview" data-testid="canvas-preview" />
+            <canvas ref={canvasRef} className={`canvas-preview${!photo || isRendering || !brandsReady ? ' sr-only' : ''}`} aria-label="Generated Hacker House Goa preview" data-testid="canvas-preview" />
           </div>
           <div className="action-bar">
-            <button type="button" className="action-button primary" onClick={download} disabled={!photo || isRendering || !hasCardDetails} data-testid="button-download">
+            <button type="button" className="action-button primary" onClick={download} disabled={!photo || isRendering || !brandsReady || !hasCardDetails} data-testid="button-download">
               <Download size={17} /> download PNG
             </button>
-            <button type="button" className="action-button secondary" onClick={share} disabled={!photo || isRendering || !hasCardDetails} data-testid="button-share">
+            <button type="button" className="action-button secondary" onClick={share} disabled={!photo || isRendering || !brandsReady || !hasCardDetails} data-testid="button-share">
               <Share2 size={17} /> share on X
             </button>
           </div>
           {notice && <p className="notice" role="status" data-testid="status-notice"><Info size={15} /> {notice}</p>}
           {photo && format === 'card' && !hasCardDetails && <p className="notice" data-testid="status-card-details"><FileImage size={15} /> Add your name and role to unlock this card.</p>}
-          {photo && <button type="button" className="action-button ghost" onClick={reset} style={{ width: '100%', marginTop: '9px' }} data-testid="button-reset"><RotateCcw size={16} /> start over with a new photo</button>}
+          {photo && <button type="button" className="action-button ghost" onClick={reset} data-testid="button-reset"><RotateCcw size={16} /> start over with a new photo</button>}
         </section>
       </section>
 
