@@ -760,36 +760,12 @@ function App() {
     }, "image/png");
   };
 
-  const share = async () => {
+  const share = () => {
     if (!canvasRef.current || !photo) return;
     const shareText =
       format === "frame"
         ? "Framed for Hacker House Goa 2026. #FrameInGoa\n\nGenerate your frame & ID card: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com"
         : `Heading to Hacker House Goa 2026 as ${name.trim() || "a builder"}${role.trim() ? ` (${builderTitle})` : ""}. #FrameInGoa\n\nGenerate your ID card & frame: https://goa-hh.vercel.app\nEvent details: https://hhgoa.com`;
-
-    try {
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvasRef.current?.toBlob(resolve, "image/png"),
-      );
-      const fileName =
-        format === "frame"
-          ? "hh-goa-2026-frame.png"
-          : "hh-goa-2026-builder-card.png";
-      if (blob) {
-        const file = new File([blob], fileName, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: "Hacker House Goa 2026 #FrameInGoa",
-            text: shareText,
-            files: [file],
-          });
-          setNotice("Shared directly with your image attached! #FrameInGoa");
-          return;
-        }
-      }
-    } catch {
-      // Fallback to auto-download + X intent tab
-    }
 
     download();
     const target = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
@@ -800,11 +776,11 @@ function App() {
     );
     if (!popup) {
       setNotice(
-        "Image saved to downloads! Allow pop-ups for this page to open X compose automatically.",
+        "Image downloaded! Allow pop-ups for this site to open X compose in a new tab.",
       );
     } else {
       setNotice(
-        "Image saved to downloads! Attach your saved graphic to the X compose post window.",
+        "Image downloaded & X compose opened in a new tab! Attach your saved graphic to your post.",
       );
     }
   };
