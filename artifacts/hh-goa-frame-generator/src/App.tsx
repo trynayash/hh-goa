@@ -1271,6 +1271,9 @@ function App() {
               )}
             </button>
           </div>
+          <p className="share-popup-hint" data-testid="text-share-popup-hint">
+            💡 Note: Allow pop-ups for this site so X compose can open automatically in a new tab.
+          </p>
           {notice && (
             <p className="notice" role="status" data-testid="status-notice">
               <Info size={15} /> {notice}

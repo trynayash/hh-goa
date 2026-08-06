@@ -2,15 +2,17 @@ import { APP_URL, HASHTAG, HH_URL } from "./constants";
 import type { ShareOptions } from "./shareTypes";
 
 export function getShareText(options: ShareOptions): string {
+  return getCleanCaption(options);
+}
+
+export function getCleanCaption(options: ShareOptions): string {
   const { format, name, role, builderTitle } = options;
 
   if (format === "frame") {
     return (
-      `🚀 Just generated my official Hacker House Goa 2026 Profile Frame!\n\n` +
-      `Built using the HH Goa Frame & Builder ID Generator.\n\n` +
-      `Generate yours:\n${APP_URL}\n\n` +
-      `Official event:\n${HH_URL}\n\n` +
-      `${HASHTAG}`
+      `Happy to join the Hacker House Goa 2026 community! Excited to connect and build alongside incredible minds. ${HASHTAG}\n\n` +
+      `Generate your frame & ID card: ${APP_URL}\n` +
+      `Official event: ${HH_URL}`
     );
   }
 
@@ -22,24 +24,8 @@ export function getShareText(options: ShareOptions): string {
       : "";
 
   return (
-    `🚀 Just generated my official Hacker House Goa 2026 Builder ID as ${safeName}${titleInfo}!\n\n` +
-    `Built using the HH Goa Frame & Builder ID Generator.\n\n` +
-    `Generate yours:\n${APP_URL}\n\n` +
-    `Official event:\n${HH_URL}\n\n` +
-    `${HASHTAG}`
+    `Happy to join Hacker House Goa 2026 as ${safeName}${titleInfo}! Excited to connect and build alongside incredible minds. ${HASHTAG}\n\n` +
+    `Generate your ID card & frame: ${APP_URL}\n` +
+    `Official event: ${HH_URL}`
   );
-}
-
-export function getCleanCaption(options: ShareOptions): string {
-  const { format, name, role, builderTitle } = options;
-  if (format === "frame") {
-    return `Framed for Hacker House Goa 2026. ${HASHTAG}\n\nGenerate your frame & ID card: ${APP_URL}\nEvent details: ${HH_URL}`;
-  }
-  const safeName = name?.trim() || "a builder";
-  const titleInfo = builderTitle
-    ? ` (${builderTitle})`
-    : role?.trim()
-      ? ` (${role.trim()})`
-      : "";
-  return `Heading to Hacker House Goa 2026 as ${safeName}${titleInfo}. ${HASHTAG}\n\nGenerate your ID card & frame: ${APP_URL}\nEvent details: ${HH_URL}`;
 }
