@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+import heic2any from 'heic2any';
 import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   Check,
+  Crop as CropIcon,
   Download,
   FileImage,
   Info,
+  Monitor,
+  Move,
   RotateCcw,
   Share2,
   Sparkles,
@@ -13,6 +21,12 @@ import bannerAsset from '@assets/bANNER_1785999397328.webp';
 import logoAsset from '@assets/logo_1785999397329.webp';
 
 type Format = 'frame' | 'card';
+
+type Crop = {
+  zoom: number;
+  panX: number;
+  panY: number;
+};
 
 type Photo = {
   file: File;
@@ -36,10 +50,35 @@ const COLORS = {
   lime: '#8fbe6d',
   cream: '#fff4c8',
 };
+const DEFAULT_CROP: Crop = { zoom: 1, panX: 0, panY: 0 };
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+const FRAME_ASPECT = 1;
+const CARD_PHOTO_ASPECT = 664 / 872;
+const CARD_ASPECT = 1.6;
 
 function isAcceptedFile(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   return file.type.startsWith('image/') || ACCEPTED_EXTENSIONS.includes(extension);
+}
+
+function isHeicFile(file: File) {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return file.type === 'image/heic' || file.type === 'image/heif' || extension === 'heic' || extension === 'heif';
+}
+
+function getBuilderTitle(role: string) {
+  const signal = role.trim().toLowerCase();
+  if (signal.includes('react')) return 'React Interface Builder';
+  if (signal.includes('hardware')) return 'Hardware Tinkerer';
+  if (signal.includes('design')) return 'Design Systems Maker';
+  if (signal.includes('ai')) return 'AI Field Builder';
+  if (signal.includes('music')) return 'Sound Architect';
+  if (signal.includes('founder')) return 'Founder in Residence';
+  if (signal.includes('security')) return 'Security Pathfinder';
+  if (signal.includes('data')) return 'Data Cartographer';
+  if (signal.includes('art')) return 'Artful Technologist';
+  return 'Coastal Builder';
 }
 
 function loadBrandImage(src: string) {
@@ -51,6 +90,41 @@ function loadBrandImage(src: string) {
   });
 }
 
+function cropAspect(format: Format) {
+  return format === 'frame' ? FRAME_ASPECT : CARD_PHOTO_ASPECT;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getCoverMetrics(image: HTMLImageElement, targetAspect: number, zoom: number) {
+  const imageWidth = image.naturalWidth;
+  const imageHeight = image.naturalHeight;
+  const sourceRatio = imageWidth / imageHeight;
+  const baseWidth = sourceRatio > targetAspect ? imageHeight * targetAspect : imageWidth;
+  const baseHeight = sourceRatio > targetAspect ? imageHeight : imageWidth / targetAspect;
+  const visibleWidth = baseWidth / zoom;
+  const visibleHeight = baseHeight / zoom;
+  return {
+    visibleWidth,
+    visibleHeight,
+    maxOffsetX: Math.max(0, (imageWidth - visibleWidth) / 2),
+    maxOffsetY: Math.max(0, (imageHeight - visibleHeight) / 2),
+  };
+}
+
+function clampCrop(crop: Crop, image: HTMLImageElement | null, targetAspect: number): Crop {
+  const zoom = clamp(crop.zoom, MIN_ZOOM, MAX_ZOOM);
+  if (!image) return { zoom, panX: clamp(crop.panX, -1, 1), panY: clamp(crop.panY, -1, 1) };
+  const metrics = getCoverMetrics(image, targetAspect, zoom);
+  return {
+    zoom,
+    panX: metrics.maxOffsetX > 0 ? clamp(crop.panX, -1, 1) : 0,
+    panY: metrics.maxOffsetY > 0 ? clamp(crop.panY, -1, 1) : 0,
+  };
+}
+
 function drawCover(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -58,23 +132,17 @@ function drawCover(
   y: number,
   width: number,
   height: number,
-  focusX = 0.5,
-  focusY = 0.5,
+  crop: Crop,
 ) {
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
   const targetRatio = width / height;
-  let sourceWidth = image.naturalWidth;
-  let sourceHeight = image.naturalHeight;
-  let sourceX = 0;
-  let sourceY = 0;
-
-  if (sourceRatio > targetRatio) {
-    sourceWidth = image.naturalHeight * targetRatio;
-    sourceX = (image.naturalWidth - sourceWidth) * focusX;
-  } else {
-    sourceHeight = image.naturalWidth / targetRatio;
-    sourceY = (image.naturalHeight - sourceHeight) * focusY;
-  }
+  const safeCrop = clampCrop(crop, image, targetRatio);
+  const metrics = getCoverMetrics(image, targetRatio, safeCrop.zoom);
+  const centerX = image.naturalWidth / 2 + safeCrop.panX * metrics.maxOffsetX;
+  const centerY = image.naturalHeight / 2 + safeCrop.panY * metrics.maxOffsetY;
+  const sourceWidth = metrics.visibleWidth;
+  const sourceHeight = metrics.visibleHeight;
+  const sourceX = clamp(centerX - sourceWidth / 2, 0, image.naturalWidth - sourceWidth);
+  const sourceY = clamp(centerY - sourceHeight / 2, 0, image.naturalHeight - sourceHeight);
 
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 }
@@ -158,11 +226,13 @@ function renderFrame(
   format: Format,
   name: string,
   role: string,
+  builderTitle: string,
   brandImages: BrandImages,
+  crop: Crop,
 ) {
   const isCard = format === 'card';
-  const width = isCard ? 1000 : 1400;
-  const height = 1400;
+  const width = isCard ? 1600 : 1400;
+  const height = isCard ? Math.round(width / CARD_ASPECT) : 1400;
   const context = canvas.getContext('2d');
   if (!context) return;
   canvas.width = width;
@@ -172,7 +242,7 @@ function renderFrame(
   context.imageSmoothingQuality = 'high';
 
   if (!isCard) {
-    drawCover(context, photo.image, 0, 0, width, height);
+    drawCover(context, photo.image, 0, 0, width, height, crop);
     const wash = context.createLinearGradient(0, 0, width, height);
     wash.addColorStop(0, 'rgba(7, 107, 59, .10)');
     wash.addColorStop(.58, 'rgba(7, 107, 59, .03)');
@@ -224,49 +294,75 @@ function renderFrame(
   context.fillStyle = COLORS.cream;
   context.fillRect(0, 0, width, height);
   context.fillStyle = COLORS.green;
-  context.fillRect(0, 0, width, 770);
-  drawCover(context, photo.image, 32, 32, width - 64, 706, .5, .44);
-  context.fillStyle = 'rgba(7, 107, 59, .14)';
-  context.fillRect(32, 32, width - 64, 706);
+  context.fillRect(28, 28, width - 56, height - 56);
   context.strokeStyle = COLORS.yellow;
-  context.lineWidth = 8;
-  context.strokeRect(32, 32, width - 64, 706);
-  context.strokeStyle = COLORS.pink;
-  context.lineWidth = 3;
-  context.strokeRect(51, 51, width - 102, 668);
-  drawBrandLogo(context, brandImages.logo, 68, 68, 115);
-  drawSmallType(context, 'HACKER HOUSE GOA', 205, 110, COLORS.cream);
-  drawSmallType(context, 'BUILDER ID / 026', 932, 110, COLORS.yellow, 'right');
+  context.lineWidth = 6;
+  context.strokeRect(48, 48, width - 96, height - 96);
 
-  context.fillStyle = COLORS.green;
-  context.fillRect(0, 770, width, 630);
-  context.fillStyle = COLORS.pink;
-  context.fillRect(0, 770, width, 18);
-  if (brandImages.banner) {
-    drawContain(context, brandImages.banner, 56, 816, 888, 176, COLORS.green);
-    context.strokeStyle = COLORS.yellow;
-    context.lineWidth = 3;
-    context.strokeRect(56, 816, 888, 176);
-  }
-  drawSmallType(context, 'NAME / STACK', 76, 1050, COLORS.lime);
-  context.fillStyle = COLORS.cream;
-  context.font = '700 72px "Fraunces", Georgia, serif';
-  context.textAlign = 'left';
-  const safeName = name.trim() || 'YOUR NAME';
-  context.fillText(safeName.slice(0, 18), 76, 1152);
+  const photoX = 76;
+  const photoY = 76;
+  const photoWidth = 664;
+  const photoHeight = 848;
+  drawCover(context, photo.image, photoX, photoY, photoWidth, photoHeight, crop);
+  const photoWash = context.createLinearGradient(photoX, photoY, photoX + photoWidth, photoY + photoHeight);
+  photoWash.addColorStop(0, 'rgba(7, 107, 59, .03)');
+  photoWash.addColorStop(1, 'rgba(7, 55, 35, .28)');
+  context.fillStyle = photoWash;
+  context.fillRect(photoX, photoY, photoWidth, photoHeight);
+  context.strokeStyle = COLORS.pink;
+  context.lineWidth = 6;
+  context.strokeRect(photoX, photoY, photoWidth, photoHeight);
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 2;
+  context.strokeRect(photoX + 14, photoY + 14, photoWidth - 28, photoHeight - 28);
+
+  const infoX = 802;
+  const infoRight = 1518;
+  drawBrandLogo(context, brandImages.logo, infoX, 78, 112);
+  drawSmallType(context, 'HACKER HOUSE GOA', infoX + 136, 119, COLORS.cream);
+  drawSmallType(context, 'BUILDER ID / 026', infoRight, 119, COLORS.yellow, 'right');
   context.fillStyle = COLORS.yellow;
-  context.font = '500 32px "DM Mono", monospace';
-  context.fillText((role.trim() || 'BUILDER / MAKER').slice(0, 26), 76, 1218);
-  drawSmallType(context, 'GOA, INDIA · 28—31 OCT 2026', 76, 1332, COLORS.cream);
-  drawSmallType(context, '#FrameInGoa', 924, 1332, COLORS.yellow, 'right');
+  context.fillRect(infoX, 162, infoRight - infoX, 4);
+
+  drawSmallType(context, 'BUILDER / ' + builderTitle.toUpperCase().slice(0, 31), infoX, 225, COLORS.lime);
+  const safeName = name.trim() || 'YOUR NAME';
+  context.fillStyle = COLORS.cream;
+  context.font = '700 86px "Fraunces", Georgia, serif';
+  context.textAlign = 'left';
+  context.fillText(safeName.slice(0, 19), infoX, 330);
+  context.fillStyle = COLORS.yellow;
+  context.font = '500 30px "DM Mono", monospace';
+  context.fillText((role.trim() || 'BUILDER / MAKER').slice(0, 32), infoX, 387);
+
+  context.fillStyle = 'rgba(255, 244, 200, .12)';
+  context.fillRect(infoX, 454, infoRight - infoX, 2);
+  drawSmallType(context, 'EVENT LOCATION', infoX, 505, COLORS.lime);
+  drawSmallType(context, 'GOA, INDIA', infoX, 544, COLORS.cream);
+  drawSmallType(context, 'EVENT DATES', 1174, 505, COLORS.lime);
+  drawSmallType(context, '28—31 OCT 2026', 1174, 544, COLORS.cream);
+
+  context.fillStyle = COLORS.pink;
+  context.fillRect(infoX, 626, infoRight - infoX, 10);
+  drawSmallType(context, 'HACKER HOUSE GOA / 2026', infoX, 690, COLORS.cream);
+  drawSmallType(context, '#FrameInGoa', infoRight, 690, COLORS.yellow, 'right');
+  if (brandImages.banner) {
+    drawContain(context, brandImages.banner, infoX, 742, infoRight - infoX, 128, COLORS.green);
+    context.strokeStyle = COLORS.yellow;
+    context.lineWidth = 2;
+    context.strokeRect(infoX, 742, infoRight - infoX, 128);
+  }
+  drawSmallType(context, 'MADE FOR BUILDERS, NOT DATABASES', infoX, 907, COLORS.lime);
 }
 
 function App() {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [format, setFormat] = useState<Format>('frame');
+  const [crop, setCrop] = useState<Crop>(DEFAULT_CROP);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [isCropDragging, setIsCropDragging] = useState(false);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [brandsReady, setBrandsReady] = useState(false);
   const [brandImages, setBrandImages] = useState<BrandImages>({ banner: null, logo: null });
@@ -275,7 +371,9 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const fileLoadRef = useRef(0);
   const renderFrameRef = useRef<number | null>(null);
+  const cropPointerRef = useRef<{ id: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
     Promise.allSettled([loadBrandImage(bannerAsset), loadBrandImage(logoAsset)]).then((results) => {
@@ -298,33 +396,72 @@ function App() {
     setIsRendering(true);
     if (renderFrameRef.current) cancelAnimationFrame(renderFrameRef.current);
     renderFrameRef.current = requestAnimationFrame(() => {
-      renderFrame(canvasRef.current!, photo, format, name, role, brandImages);
+      renderFrame(canvasRef.current!, photo, format, name, role, getBuilderTitle(role), brandImages, crop);
       setIsRendering(false);
     });
-  }, [photo, format, name, role, brandsReady, brandImages]);
+  }, [photo, format, name, role, brandsReady, brandImages, crop]);
 
-  const loadFile = (file?: File) => {
+  const loadFile = async (file?: File) => {
     if (!file) return;
+    const loadToken = ++fileLoadRef.current;
     setError('');
     setNotice('');
     if (!isAcceptedFile(file)) {
+      setIsLoadingFile(false);
       setError('That file is not an image we can use. Choose a JPG, PNG, or HEIC photo.');
       return;
     }
-    const url = URL.createObjectURL(file);
+    setIsLoadingFile(true);
+    let url: string | null = null;
+    try {
+      if (isHeicFile(file)) {
+        setNotice('Converting HEIC locally for the crop studio…');
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+        const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+        if (!(convertedBlob instanceof Blob)) throw new Error('HEIC conversion returned no image');
+        url = URL.createObjectURL(convertedBlob);
+      } else {
+        url = URL.createObjectURL(file);
+      }
+    } catch {
+      if (loadToken !== fileLoadRef.current) return;
+      setIsLoadingFile(false);
+      setError('We could not convert that HEIC photo in this browser. Try exporting it as JPG or PNG, then upload it again.');
+      setNotice('');
+      return;
+    }
+    if (!url) {
+      setIsLoadingFile(false);
+      setError('We could not prepare that image. Try a JPG or PNG instead.');
+      return;
+    }
+    if (loadToken !== fileLoadRef.current) {
+      URL.revokeObjectURL(url);
+      return;
+    }
     const image = new Image();
     image.onload = () => {
+      if (loadToken !== fileLoadRef.current) {
+        URL.revokeObjectURL(url!);
+        return;
+      }
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = url;
       setPhoto({ file, url, image, width: image.naturalWidth, height: image.naturalHeight });
+      setCrop(DEFAULT_CROP);
+      setIsLoadingFile(false);
       setError('');
-      setNotice('Photo loaded. Your crop is automatic and ready to frame.');
+      setNotice(isHeicFile(file)
+        ? 'HEIC converted locally. Crop studio ready — your original photo stays on-device.'
+        : 'Photo loaded. Crop studio ready — adjust locally on-device.');
     };
     image.onerror = () => {
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url!);
+      if (loadToken !== fileLoadRef.current) return;
+      setIsLoadingFile(false);
       const extension = file.name.split('.').pop()?.toLowerCase();
       if (extension === 'heic' || extension === 'heif') {
-        setError('This browser cannot decode HEIC yet. Export the photo as JPG or PNG from your camera app, then try again.');
+        setError('The HEIC preview could not be decoded after conversion. Export the photo as JPG or PNG from your camera app, then try again.');
       } else {
         setError('We could not read that image. Try a different JPG or PNG.');
       }
@@ -332,19 +469,98 @@ function App() {
     image.src = url;
   };
 
+  const changeFormat = (nextFormat: Format) => {
+    setFormat(nextFormat);
+    setCrop((currentCrop) => clampCrop(currentCrop, photo?.image ?? null, cropAspect(nextFormat)));
+  };
+
+  const resetCrop = () => {
+    setCrop(DEFAULT_CROP);
+    setNotice('Crop reset to the cover view. Your photo stays on this device.');
+  };
+
+  const nudgeCrop = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!photo) return;
+    const adjustment = .14;
+    const offset = {
+      up: { panY: adjustment },
+      down: { panY: -adjustment },
+      left: { panX: adjustment },
+      right: { panX: -adjustment },
+    }[direction];
+    setCrop((currentCrop) => clampCrop({
+      ...currentCrop,
+      panX: currentCrop.panX + (offset.panX ?? 0),
+      panY: currentCrop.panY + (offset.panY ?? 0),
+    }, photo.image, cropAspect(format)));
+  };
+
+  const handleCropPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!photo || event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    cropPointerRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    setIsCropDragging(true);
+  };
+
+  const handleCropPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const pointer = cropPointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId || !photo) return;
+    event.preventDefault();
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const deltaX = ((event.clientX - pointer.x) / bounds.width) * 2;
+    const deltaY = ((event.clientY - pointer.y) / bounds.height) * 2;
+    cropPointerRef.current = { id: pointer.id, x: event.clientX, y: event.clientY };
+    setCrop((currentCrop) => clampCrop({
+      ...currentCrop,
+      panX: currentCrop.panX - deltaX,
+      panY: currentCrop.panY - deltaY,
+    }, photo.image, cropAspect(format)));
+  };
+
+  const finishCropPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (cropPointerRef.current?.id !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    cropPointerRef.current = null;
+    setIsCropDragging(false);
+  };
+
+  const handleZoomChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextZoom = Number(event.target.value);
+    setCrop((currentCrop) => clampCrop({ ...currentCrop, zoom: nextZoom }, photo?.image ?? null, cropAspect(format)));
+  };
+
+  const cropImageStyle = photo ? (() => {
+    const targetAspect = cropAspect(format);
+    const sourceAspect = photo.width / photo.height;
+    const imageWidth = sourceAspect > targetAspect ? (sourceAspect / targetAspect) * crop.zoom * 100 : crop.zoom * 100;
+    const imageHeight = sourceAspect > targetAspect ? crop.zoom * 100 : (targetAspect / sourceAspect) * crop.zoom * 100;
+    const overflowX = Math.max(0, (imageWidth - 100) / 2);
+    const overflowY = Math.max(0, (imageHeight - 100) / 2);
+    return {
+      width: `${imageWidth}%`,
+      height: `${imageHeight}%`,
+      left: `${50 - imageWidth / 2 - crop.panX * overflowX}%`,
+      top: `${50 - imageHeight / 2 - crop.panY * overflowY}%`,
+    };
+  })() : undefined;
+
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
-    loadFile(event.dataTransfer.files[0]);
+    void loadFile(event.dataTransfer.files[0]);
   };
 
   const reset = () => {
+    fileLoadRef.current += 1;
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     objectUrlRef.current = null;
     setPhoto(null);
+    setCrop(DEFAULT_CROP);
     setName('');
     setRole('');
     setFormat('frame');
+    setIsLoadingFile(false);
     setError('');
     setNotice('');
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -382,6 +598,7 @@ function App() {
   };
 
   const hasCardDetails = format === 'frame' || Boolean(name.trim() && role.trim());
+  const builderTitle = getBuilderTitle(role);
 
   return (
     <main className="app-shell">
@@ -413,6 +630,12 @@ function App() {
             <span className="hero-details-rule" aria-hidden="true" />
             <span>Goa, India</span>
           </div>
+          <div className="capability-row" aria-label="Generator capabilities">
+            <span><Monitor size={13} aria-hidden="true" /> local render</span>
+            <span><CropIcon size={13} aria-hidden="true" /> custom crop</span>
+            <span><Share2 size={13} aria-hidden="true" /> share-ready</span>
+          </div>
+          <p className="privacy-line">Your photo never leaves this device.</p>
         </div>
         <figure className="hero-poster">
           <img src={bannerAsset} alt="Hacker House Goa, India, 28–31 Oct 2026 event banner" />
@@ -433,7 +656,7 @@ function App() {
           {!photo ? (
             <div
               className={`upload-zone${isDragging ? ' is-dragging' : ''}`}
-              onDrop={handleDrop}
+               onDrop={handleDrop}
               onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onClick={() => fileInputRef.current?.click()}
@@ -445,11 +668,11 @@ function App() {
               <div className="upload-content">
                 <span className="upload-icon"><Upload size={21} strokeWidth={2.5} /></span>
                 <p className="upload-title">Drop your face / work / sky here</p>
-                <p className="upload-caption">JPG, PNG, or HEIC · under 20 MB</p>
+                 <p className="upload-caption">{isLoadingFile ? 'converting locally…' : 'JPG, PNG, or HEIC · under 20 MB'}</p>
                 <button
                   type="button"
                   className="text-button"
-                  onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }}
+                   onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }}
                   data-testid="button-choose-photo"
                 >
                   choose from device
@@ -461,7 +684,11 @@ function App() {
               <img className="photo-thumb" src={photo.url} alt="Uploaded source preview" data-testid="img-photo-thumbnail" />
               <div className="photo-meta">
                 <p className="photo-name" data-testid="text-photo-name">{photo.file.name}</p>
-                <p className="photo-dimensions" data-testid="text-photo-dimensions">{photo.width} × {photo.height} px · auto cover crop</p>
+                <p className="photo-dimensions" data-testid="text-photo-dimensions">
+                  {photo.width} × {photo.height} px · {crop.zoom === 1 && crop.panX === 0 && crop.panY === 0
+                    ? 'automatic cover crop'
+                    : `custom crop at ${Math.round(crop.zoom * 100)} percent`}
+                </p>
                 <button type="button" className="replace-button" onClick={() => fileInputRef.current?.click()} data-testid="button-replace-photo">
                   replace photo
                 </button>
@@ -469,12 +696,64 @@ function App() {
             </div>
           )}
 
+          {photo && (
+            <section className="crop-studio" aria-labelledby="crop-studio-title">
+              <div className="crop-studio-heading">
+                <div>
+                  <p className="crop-eyebrow">crop studio</p>
+                  <h3 id="crop-studio-title">Set the frame</h3>
+                </div>
+                <span className="crop-format-tag">{format === 'frame' ? '1:1 profile' : 'portrait photo / wide ID'}</span>
+              </div>
+              <div
+                className={`crop-viewport${isCropDragging ? ' is-dragging' : ''}`}
+                style={{ aspectRatio: cropAspect(format) }}
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={finishCropPointer}
+                onPointerCancel={finishCropPointer}
+                role="application"
+                aria-label={`${format === 'frame' ? 'Square profile frame' : 'Wide builder card'} crop viewport. Drag the photo to reposition it.`}
+                data-testid="crop-viewport"
+              >
+                <img className="crop-photo" src={photo.url} alt="" style={cropImageStyle} draggable={false} />
+                <span className="crop-boundary" aria-hidden="true" />
+                <span className="crop-format-label">{format === 'frame' ? 'PROFILE FRAME' : 'BUILDER ID PHOTO'}</span>
+                <span className="crop-drag-affordance"><Move size={14} /> {isCropDragging ? 'repositioning' : 'drag to reposition'}</span>
+              </div>
+              <div className="crop-control-row">
+                <label className="zoom-control" htmlFor="crop-zoom">
+                  <span>Zoom <output htmlFor="crop-zoom">{Math.round(crop.zoom * 100)}%</output></span>
+                  <input id="crop-zoom" type="range" min={MIN_ZOOM} max={MAX_ZOOM} step="0.01" value={crop.zoom} onChange={handleZoomChange} aria-label="Crop zoom" data-testid="input-crop-zoom" />
+                </label>
+                <button type="button" className="reset-crop-button" onClick={resetCrop} data-testid="button-reset-crop">
+                  <RotateCcw size={14} /> reset crop
+                </button>
+              </div>
+              <div className="crop-position-controls" role="group" aria-label="Move photo position">
+                <span className="crop-position-label">Move photo</span>
+                <div className="crop-direction-pad">
+                  <span aria-hidden="true" />
+                  <button type="button" onClick={() => nudgeCrop('up')} aria-label="Move photo up" title="Move photo up"><ArrowUp size={15} /></button>
+                  <span aria-hidden="true" />
+                  <button type="button" onClick={() => nudgeCrop('left')} aria-label="Move photo left" title="Move photo left"><ArrowLeft size={15} /></button>
+                  <span className="crop-direction-center" aria-hidden="true" />
+                  <button type="button" onClick={() => nudgeCrop('right')} aria-label="Move photo right" title="Move photo right"><ArrowRight size={15} /></button>
+                  <span aria-hidden="true" />
+                  <button type="button" onClick={() => nudgeCrop('down')} aria-label="Move photo down" title="Move photo down"><ArrowDown size={15} /></button>
+                  <span aria-hidden="true" />
+                </div>
+              </div>
+              <p className="crop-helper">Drag the photo directly, or use the arrows for precise horizontal and vertical positioning. Everything stays local.</p>
+            </section>
+          )}
+
           <input
             ref={fileInputRef}
             className="sr-only"
             type="file"
             accept="image/*,.heic,.heif"
-            onChange={(event) => loadFile(event.target.files?.[0])}
+            onChange={(event) => { void loadFile(event.target.files?.[0]); }}
             data-testid="input-photo-file"
           />
 
@@ -486,7 +765,7 @@ function App() {
             <button
               type="button"
               className={`format-option${format === 'frame' ? ' is-selected' : ''}`}
-              onClick={() => setFormat('frame')}
+              onClick={() => changeFormat('frame')}
               role="radio"
               aria-checked={format === 'frame'}
               data-testid="button-format-frame"
@@ -501,7 +780,7 @@ function App() {
             <button
               type="button"
               className={`format-option${format === 'card' ? ' is-selected' : ''}`}
-              onClick={() => setFormat('card')}
+              onClick={() => changeFormat('card')}
               role="radio"
               aria-checked={format === 'card'}
               data-testid="button-format-card"
@@ -509,7 +788,7 @@ function App() {
               <span className="format-glyph card">B</span>
               <span>
                 <span className="format-name">Builder ID card</span>
-                <span className="format-description">Portrait card with your name and stack.</span>
+                <span className="format-description">Landscape credential with your photo and event details.</span>
               </span>
               <Check className="check-mark" size={17} />
             </button>
@@ -525,12 +804,17 @@ function App() {
                 <label className="field-label" htmlFor="builder-role">Role / stack</label>
                 <input id="builder-role" className="field-input" value={role} onChange={(event) => setRole(event.target.value)} placeholder="e.g. hardware + poetry" maxLength={30} data-testid="input-builder-role" />
               </div>
+              <div className="builder-title-preview" aria-live="polite" data-testid="text-builder-title">
+                <span className="field-label">Generated builder title</span>
+                <strong>{builderTitle}</strong>
+                <small>Based on your role / stack, updated live.</small>
+              </div>
             </div>
           )}
 
           <p className="helper-text">
             {format === 'frame'
-              ? 'The crop keeps the centre of your photo in focus and builds the Goa signal around it.'
+              ? 'Your square crop becomes the full profile frame, with the Goa signal built around it.'
               : 'Your details stay in this browser and are painted into the image only when you export.'}
           </p>
         </aside>
@@ -563,10 +847,10 @@ function App() {
             <canvas ref={canvasRef} className={`canvas-preview${!photo || isRendering || !brandsReady ? ' sr-only' : ''}`} aria-label="Generated Hacker House Goa preview" data-testid="canvas-preview" />
           </div>
           <div className="action-bar">
-            <button type="button" className="action-button primary" onClick={download} disabled={!photo || isRendering || !brandsReady || !hasCardDetails} data-testid="button-download">
+             <button type="button" className="action-button primary" onClick={download} disabled={!photo || isLoadingFile || isRendering || !brandsReady || !hasCardDetails} data-testid="button-download">
               <Download size={17} /> download PNG
             </button>
-            <button type="button" className="action-button secondary" onClick={share} disabled={!photo || isRendering || !brandsReady || !hasCardDetails} data-testid="button-share">
+             <button type="button" className="action-button secondary" onClick={share} disabled={!photo || isLoadingFile || isRendering || !brandsReady || !hasCardDetails} data-testid="button-share">
               <Share2 size={17} /> share on X
             </button>
           </div>
