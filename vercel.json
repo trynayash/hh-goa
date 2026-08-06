@@ -1,0 +1,11 @@
+{
+  "buildCommand": "pnpm run build:frontend",
+  "outputDirectory": "artifacts/hh-goa-frame-generator/dist/public",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
