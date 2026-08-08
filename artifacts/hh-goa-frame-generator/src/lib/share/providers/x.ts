@@ -1,33 +1,30 @@
 export interface ShareProvider {
-  openBlankWindow(): Window | null;
-  redirectToIntent(popup: Window | null, text: string): boolean;
+  openIntent(text: string): boolean;
 }
 
 export const xShareProvider: ShareProvider = {
-  openBlankWindow(): Window | null {
-    if (typeof window === "undefined") return null;
-    try {
-      return window.open("about:blank", "_blank", "noopener,noreferrer");
-    } catch {
-      return null;
-    }
-  },
-
-  redirectToIntent(popup: Window | null, text: string): boolean {
+  openIntent(text: string): boolean {
+    if (typeof window === "undefined") return false;
     const intentUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
-    if (popup && !popup.closed) {
-      try {
-        popup.location.href = intentUrl;
-        return true;
-      } catch {
-        // Fallback open if location mutation failed
-        window.open(intentUrl, "_blank", "noopener,noreferrer");
+    try {
+      // 1. Direct window.open on user click gesture - never blocked by browser popup blockers
+      const win = window.open(intentUrl, "_blank", "noopener,noreferrer");
+      if (win) {
+        win.focus();
         return true;
       }
-    } else {
-      // Synchronous popup fallback
-      const fallbackWin = window.open(intentUrl, "_blank", "noopener,noreferrer");
-      return Boolean(fallbackWin);
+      // 2. Direct anchor click fallback for restricted browser contexts
+      const link = document.createElement("a");
+      link.href = intentUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return true;
+    } catch {
+      return false;
     }
   },
 };
+

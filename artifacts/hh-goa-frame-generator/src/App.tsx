@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUp,
   Check,
+  Copy,
   Crop as CropIcon,
   Download,
   ExternalLink,
@@ -22,7 +23,7 @@ import bannerAsset from "@assets/bANNER_1785999397328.webp";
 import logoAsset from "@assets/logo_1785999397329.webp";
 import { useShare } from "./hooks/useShare";
 import { ShareToast } from "./components/ShareToast";
-import { ShareModal } from "./components/ShareModal";
+
 
 type Format = "frame" | "card";
 
@@ -768,11 +769,8 @@ function App() {
   const {
     isSharing,
     toastMessage,
-    showModal,
-    lastOptions,
     copied,
     handleShare,
-    closeModal,
     closeToast,
     copyCaptionToClipboard,
   } = useShare();
@@ -1286,9 +1284,25 @@ function App() {
               )}
             </button>
           </div>
-          <p className="share-popup-hint" data-testid="text-share-popup-hint">
-            Note: Allow pop-ups for this site so X compose can open automatically in a new tab.
-          </p>
+          {photo && hasCardDetails && (
+            <button
+              type="button"
+              className="action-button ghost caption-btn"
+              onClick={() =>
+                copyCaptionToClipboard({
+                  format,
+                  name,
+                  role,
+                  builderTitle,
+                })
+              }
+              data-testid="button-copy-caption"
+              title="Copy formatted post caption to clipboard"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              {copied ? "caption copied to clipboard!" : "copy caption text"}
+            </button>
+          )}
           {notice && (
             <p className="notice" role="status" data-testid="status-notice">
               <Info size={15} /> {notice}
@@ -1319,15 +1333,9 @@ function App() {
       </footer>
 
       <ShareToast message={toastMessage} onClose={closeToast} />
-      <ShareModal
-        isOpen={showModal}
-        options={lastOptions}
-        copied={copied}
-        onClose={closeModal}
-        onCopyCaption={copyCaptionToClipboard}
-      />
     </main>
   );
 }
 
 export default App;
+
