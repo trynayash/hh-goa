@@ -25,13 +25,14 @@ import { useShare } from "./hooks/useShare";
 import { ShareToast } from "./components/ShareToast";
 
 
-type Format = "frame" | "card";
+type Format = "frame" | "circle" | "card";
 
 type Crop = {
   zoom: number;
   panX: number;
   panY: number;
 };
+
 
 type Photo = {
   file: File;
@@ -280,6 +281,464 @@ function drawBrandLogo(
   context.restore();
 }
 
+function drawCoastalWaves(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  amplitude: number = 6,
+  wavelength: number = 32,
+  color: string = "rgba(143, 190, 109, 0.7)",
+  lineWidth: number = 2.5,
+) {
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(x, y);
+  const count = Math.ceil(width / wavelength);
+  for (let i = 0; i < count; i++) {
+    const startX = x + i * wavelength;
+    const cpX1 = startX + wavelength * 0.25;
+    const cpY1 = y - amplitude;
+    const cpX2 = startX + wavelength * 0.75;
+    const cpY2 = y + amplitude;
+    const endX = startX + wavelength;
+    const endY = y;
+    context.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, endX, endY);
+  }
+  context.stroke();
+  context.restore();
+}
+
+function drawCornerBrackets(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  length: number,
+  color: string,
+  lineWidth: number = 3,
+) {
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  context.lineCap = "square";
+
+  // Top-Left
+  context.beginPath();
+  context.moveTo(x, y + length);
+  context.lineTo(x, y);
+  context.lineTo(x + length, y);
+  context.stroke();
+
+  // Top-Right
+  context.beginPath();
+  context.moveTo(x + w - length, y);
+  context.lineTo(x + w, y);
+  context.lineTo(x + w, y + length);
+  context.stroke();
+
+  // Bottom-Left
+  context.beginPath();
+  context.moveTo(x, y + h - length);
+  context.lineTo(x, y + h);
+  context.lineTo(x + length, y + h);
+  context.stroke();
+
+  // Bottom-Right
+  context.beginPath();
+  context.moveTo(x + w - length, y + h);
+  context.lineTo(x + w, y + h);
+  context.lineTo(x + w, y + h - length);
+  context.stroke();
+
+  context.restore();
+}
+
+function renderProfileFrame(
+  context: CanvasRenderingContext2D,
+  photo: Photo,
+  name: string,
+  role: string,
+  builderTitle: string,
+  brandImages: BrandImages,
+  crop: Crop,
+  width: number,
+  height: number,
+) {
+  // 1. Draw User Photo with Smooth Cover Crop
+  drawCover(context, photo.image, 0, 0, width, height, crop);
+
+  // 2. Coastal Atmosphere Lighting & Cinematic Depth
+  const sunGlow = context.createRadialGradient(
+    width - 160,
+    140,
+    40,
+    width - 160,
+    140,
+    650,
+  );
+  sunGlow.addColorStop(0, "rgba(255, 228, 0, 0.16)");
+  sunGlow.addColorStop(0.5, "rgba(247, 8, 125, 0.05)");
+  sunGlow.addColorStop(1, "rgba(7, 107, 59, 0)");
+  context.fillStyle = sunGlow;
+  context.fillRect(0, 0, width, height);
+
+  // Perimeter vignette for contrast & text readability
+  const perimeterWash = context.createLinearGradient(0, 0, 0, height);
+  perimeterWash.addColorStop(0, "rgba(7, 45, 28, 0.42)");
+  perimeterWash.addColorStop(0.18, "rgba(7, 45, 28, 0.04)");
+  perimeterWash.addColorStop(0.68, "rgba(7, 45, 28, 0.10)");
+  perimeterWash.addColorStop(1, "rgba(4, 24, 15, 0.88)");
+  context.fillStyle = perimeterWash;
+  context.fillRect(0, 0, width, height);
+
+  // 3. Double Outer Frame Borders & Precision Corner Notches
+  context.strokeStyle = "rgba(255, 228, 0, 0.45)";
+  context.lineWidth = 3;
+  context.strokeRect(36, 36, width - 72, height - 72);
+
+  context.strokeStyle = "rgba(247, 8, 125, 0.55)";
+  context.lineWidth = 1.5;
+  context.strokeRect(48, 48, width - 96, height - 96);
+
+  // Precision Hacker Corner Brackets
+  drawCornerBrackets(context, 28, 28, width - 56, height - 56, 44, COLORS.yellow, 6);
+  drawCornerBrackets(context, 40, 40, width - 80, height - 80, 24, COLORS.pink, 3);
+
+  // Subtle Geo-Coordinates at frame edges
+  drawSmallType(context, "15°29'50\" N · 73°49'33\" E", 58, 30, COLORS.lime);
+  drawSmallType(context, "GOA, INDIA · HH/026", width - 58, 30, COLORS.yellow, "right");
+
+  // 4. Floating Coastal Header Pill (Top Island)
+  const topX = 84;
+  const topY = 64;
+  const topW = width - 168;
+  const topH = 114;
+
+  context.save();
+  context.fillStyle = "rgba(7, 45, 28, 0.88)";
+  roundedRect(context, topX, topY, topW, topH, 20);
+  context.fill();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 2.5;
+  context.stroke();
+
+  // Top accent bar in pink
+  context.fillStyle = COLORS.pink;
+  context.beginPath();
+  context.roundRect(topX + 16, topY + topH - 5, topW - 32, 3, 2);
+  context.fill();
+
+  // Logo & Header Brand
+  drawBrandLogo(context, brandImages.logo, topX + 18, topY + 16, 82);
+
+  context.fillStyle = COLORS.cream;
+  context.font = '700 30px "Fraunces", Georgia, serif';
+  context.textAlign = "left";
+  context.fillText("HACKER HOUSE GOA", topX + 116, topY + 54);
+
+  drawSmallType(
+    context,
+    "COASTAL BUILDER EDITION · 2026",
+    topX + 118,
+    topY + 86,
+    COLORS.lime,
+  );
+
+  // Top Right Dates Pill
+  const datePillW = 210;
+  const datePillH = 48;
+  const datePillX = topX + topW - datePillW - 18;
+  const datePillY = topY + 33;
+  context.fillStyle = "rgba(7, 107, 59, 0.9)";
+  roundedRect(context, datePillX, datePillY, datePillW, datePillH, 12);
+  context.fill();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 1.5;
+  context.stroke();
+
+  context.fillStyle = COLORS.yellow;
+  context.font = '700 17px "DM Mono", monospace';
+  context.textAlign = "center";
+  context.fillText("28—31 OCT 2026", datePillX + datePillW / 2, datePillY + 30);
+  context.restore();
+
+  // 5. Floating Coastal Footer Badge (Bottom Waves & Signature Sash)
+  const botX = 84;
+  const botY = height - 296;
+  const botW = width - 168;
+  const botH = 224;
+
+  context.save();
+  context.fillStyle = "rgba(5, 32, 20, 0.94)";
+  roundedRect(context, botX, botY, botW, botH, 24);
+  context.fill();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 3;
+  context.stroke();
+
+  // Left Pink Accent Notch
+  context.fillStyle = COLORS.pink;
+  context.fillRect(botX, botY + 24, 10, botH - 48);
+
+  // Arabian Sea Wave Ribbons across the badge top
+  drawCoastalWaves(context, botX + 28, botY + 16, botW - 56, 6, 36, "rgba(143, 190, 109, 0.7)", 2.5);
+  drawCoastalWaves(context, botX + 28, botY + 24, botW - 56, 5, 36, "rgba(255, 228, 0, 0.5)", 2);
+
+  // Kicker Line
+  drawSmallType(
+    context,
+    "● COASTAL HACKER · GOA, INDIA",
+    botX + 32,
+    botY + 64,
+    COLORS.lime,
+  );
+
+  // Main Event Serif Title
+  context.fillStyle = COLORS.cream;
+  context.font = '700 58px "Fraunces", Georgia, serif';
+  context.textAlign = "left";
+  context.fillText("FRAME IN GOA", botX + 32, botY + 134);
+
+  // Subtitle / User Name or Tagline
+  const hasUser = Boolean(name.trim());
+  const sublineText = hasUser
+    ? `${name.trim().toUpperCase()} · ${role.trim() || builderTitle}`
+    : "HACKER HOUSE GOA 2026 · HHGOA.COM";
+
+  context.fillStyle = COLORS.yellow;
+  context.font = '600 20px "DM Mono", monospace';
+  context.fillText(sublineText.slice(0, 42), botX + 34, botY + 182);
+
+  // Right Side: #FrameInGoa Badge & Banner Stamp
+  const badgeW = 220;
+  const badgeH = 76;
+  const badgeX = botX + botW - badgeW - 24;
+  const badgeY = botY + 76;
+
+  context.fillStyle = "rgba(7, 107, 59, 0.95)";
+  roundedRect(context, badgeX, badgeY, badgeW, badgeH, 14);
+  context.fill();
+  context.strokeStyle = COLORS.pink;
+  context.lineWidth = 2.5;
+  context.stroke();
+
+  context.fillStyle = COLORS.yellow;
+  context.font = '700 24px "DM Mono", monospace';
+  context.textAlign = "center";
+  context.fillText("#FrameInGoa", badgeX + badgeW / 2, badgeY + 46);
+
+  // Small date stamp under badge
+  drawSmallType(
+    context,
+    "28—31 OCT 2026",
+    badgeX + badgeW / 2,
+    badgeY + 104,
+    COLORS.cream,
+    "center",
+  );
+
+  context.restore();
+}
+
+function renderCircleAvatar(
+  context: CanvasRenderingContext2D,
+  photo: Photo,
+  name: string,
+  role: string,
+  builderTitle: string,
+  brandImages: BrandImages,
+  crop: Crop,
+  width: number,
+  height: number,
+) {
+  const cx = width / 2;
+  const cy = height / 2;
+  const avatarRadius = 490;
+
+  // 1. Deep Emerald Coastal Gradient Backdrop
+  const bgGrad = context.createRadialGradient(cx, cy, 100, cx, cy, 720);
+  bgGrad.addColorStop(0, "rgba(7, 55, 35, 1)");
+  bgGrad.addColorStop(0.65, "rgba(5, 32, 20, 1)");
+  bgGrad.addColorStop(1, "rgba(3, 18, 11, 1)");
+  context.fillStyle = bgGrad;
+  context.fillRect(0, 0, width, height);
+
+  // Subtle Outer Grid / Geo-Coordinates along square corners
+  drawCornerBrackets(context, 28, 28, width - 56, height - 56, 44, COLORS.yellow, 4);
+  drawCornerBrackets(context, 40, 40, width - 80, height - 80, 24, COLORS.pink, 2);
+  drawSmallType(context, "15°29'50\" N · 73°49'33\" E", 58, 30, COLORS.lime);
+  drawSmallType(context, "GOA, INDIA · CIRCULAR BADGE", width - 58, 30, COLORS.yellow, "right");
+  drawSmallType(context, "OFFICIAL AVATAR / 2026", 58, height - 30, COLORS.yellow);
+  drawSmallType(context, "#FrameInGoa", width - 58, height - 30, COLORS.lime, "right");
+
+  // 2. Outer Concentric Wave Arcs & Compass Rings
+  context.save();
+  // Ambient Sun Glow
+  const glow = context.createRadialGradient(cx, cy, avatarRadius - 40, cx, cy, avatarRadius + 140);
+  glow.addColorStop(0, "rgba(255, 228, 0, 0.22)");
+  glow.addColorStop(0.5, "rgba(247, 8, 125, 0.08)");
+  glow.addColorStop(1, "rgba(7, 107, 59, 0)");
+  context.fillStyle = glow;
+  context.beginPath();
+  context.arc(cx, cy, avatarRadius + 140, 0, Math.PI * 2);
+  context.fill();
+
+  // Dotted Compass Ring
+  context.strokeStyle = "rgba(143, 190, 109, 0.6)";
+  context.lineWidth = 3;
+  context.setLineDash([8, 12]);
+  context.beginPath();
+  context.arc(cx, cy, avatarRadius + 44, 0, Math.PI * 2);
+  context.stroke();
+  context.setLineDash([]);
+
+  // Pink Accent Ring
+  context.strokeStyle = "rgba(247, 8, 125, 0.75)";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.arc(cx, cy, avatarRadius + 22, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+
+  // 3. Clipped Circular Avatar Photo
+  context.save();
+  context.beginPath();
+  context.arc(cx, cy, avatarRadius, 0, Math.PI * 2);
+  context.closePath();
+  context.clip();
+
+  // Draw user photo with cover crop centered
+  drawCover(context, photo.image, cx - avatarRadius, cy - avatarRadius, avatarRadius * 2, avatarRadius * 2, crop);
+
+  // Coastal atmospheric wash over the photo
+  const wash = context.createLinearGradient(0, cy - avatarRadius, 0, cy + avatarRadius);
+  wash.addColorStop(0, "rgba(7, 45, 28, 0.30)");
+  wash.addColorStop(0.2, "rgba(7, 45, 28, 0.02)");
+  wash.addColorStop(0.7, "rgba(7, 45, 28, 0.08)");
+  wash.addColorStop(1, "rgba(4, 24, 15, 0.85)");
+  context.fillStyle = wash;
+  context.fillRect(cx - avatarRadius, cy - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+
+  // Golden Sunbeam Shimmer
+  const sunWash = context.createRadialGradient(cx + 200, cy - 200, 20, cx + 200, cy - 200, 450);
+  sunWash.addColorStop(0, "rgba(255, 228, 0, 0.18)");
+  sunWash.addColorStop(1, "rgba(7, 107, 59, 0)");
+  context.fillStyle = sunWash;
+  context.fillRect(cx - avatarRadius, cy - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+  context.restore();
+
+  // 4. Primary Solid Gold Border Ring around Avatar
+  context.save();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 10;
+  context.beginPath();
+  context.arc(cx, cy, avatarRadius, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+
+  // 5. Top Curved Island / Header Ribbon (Positioned inside the top arch of the circle)
+  const topPillW = 620;
+  const topPillH = 92;
+  const topPillX = cx - topPillW / 2;
+  const topPillY = cy - avatarRadius + 44;
+
+  context.save();
+  context.fillStyle = "rgba(5, 32, 20, 0.94)";
+  roundedRect(context, topPillX, topPillY, topPillW, topPillH, 20);
+  context.fill();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 2.5;
+  context.stroke();
+
+  // Pink Accent line under pill
+  context.fillStyle = COLORS.pink;
+  context.fillRect(topPillX + 18, topPillY + topPillH - 4, topPillW - 36, 3);
+
+  // Brand Logo on top pill
+  drawBrandLogo(context, brandImages.logo, topPillX + 16, topPillY + 12, 68);
+
+  context.fillStyle = COLORS.cream;
+  context.font = '700 24px "Fraunces", Georgia, serif';
+  context.textAlign = "left";
+  context.fillText("HACKER HOUSE GOA", topPillX + 96, topPillY + 44);
+
+  drawSmallType(
+    context,
+    "● 28—31 OCT 2026 · GOA, INDIA",
+    topPillX + 98,
+    topPillY + 70,
+    COLORS.lime,
+  );
+  context.restore();
+
+  // 6. Bottom Coastal Wave Badge (Positioned inside the bottom arch of the circle)
+  const botPillW = 760;
+  const botPillH = 170;
+  const botPillX = cx - botPillW / 2;
+  const botPillY = cy + avatarRadius - botPillH - 36;
+
+  context.save();
+  context.fillStyle = "rgba(4, 25, 16, 0.95)";
+  roundedRect(context, botPillX, botPillY, botPillW, botPillH, 24);
+  context.fill();
+  context.strokeStyle = COLORS.yellow;
+  context.lineWidth = 3;
+  context.stroke();
+
+  // Coastal wave lines across badge top
+  drawCoastalWaves(context, botPillX + 24, botPillY + 14, botPillW - 48, 5, 30, "rgba(143, 190, 109, 0.7)", 2.5);
+  drawCoastalWaves(context, botPillX + 24, botPillY + 22, botPillW - 48, 4, 30, "rgba(255, 228, 0, 0.5)", 2);
+
+  // Kicker Line
+  drawSmallType(
+    context,
+    "● COASTAL BUILDER · HH/026",
+    botPillX + 28,
+    botPillY + 54,
+    COLORS.lime,
+  );
+
+  // Main Title
+  context.fillStyle = COLORS.cream;
+  context.font = '700 48px "Fraunces", Georgia, serif';
+  context.textAlign = "left";
+  context.fillText("FRAME IN GOA", botPillX + 28, botPillY + 106);
+
+  // Tagline or user name
+  const hasUser = Boolean(name.trim());
+  const tagText = hasUser
+    ? `${name.trim().toUpperCase()} · ${role.trim() || builderTitle}`
+    : "HACKER HOUSE GOA · 28—31 OCT 2026";
+  context.fillStyle = COLORS.yellow;
+  context.font = '600 17px "DM Mono", monospace';
+  context.fillText(tagText.slice(0, 36), botPillX + 30, botPillY + 144);
+
+  // Right Hashtag Badge
+  const tagBadgeW = 180;
+  const tagBadgeH = 64;
+  const tagBadgeX = botPillX + botPillW - tagBadgeW - 20;
+  const tagBadgeY = botPillY + 58;
+
+  context.fillStyle = "rgba(7, 107, 59, 0.95)";
+  roundedRect(context, tagBadgeX, tagBadgeY, tagBadgeW, tagBadgeH, 12);
+  context.fill();
+  context.strokeStyle = COLORS.pink;
+  context.lineWidth = 2;
+  context.stroke();
+
+  context.fillStyle = COLORS.yellow;
+  context.font = '700 20px "DM Mono", monospace';
+  context.textAlign = "center";
+  context.fillText("#FrameInGoa", tagBadgeX + tagBadgeW / 2, tagBadgeY + 40);
+  context.restore();
+}
+
 function renderFrame(
   canvas: HTMLCanvasElement,
   photo: Photo,
@@ -301,60 +760,36 @@ function renderFrame(
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
 
-  if (!isCard) {
-    drawCover(context, photo.image, 0, 0, width, height, crop);
-    const wash = context.createLinearGradient(0, 0, width, height);
-    wash.addColorStop(0, "rgba(7, 107, 59, .10)");
-    wash.addColorStop(0.58, "rgba(7, 107, 59, .03)");
-    wash.addColorStop(1, "rgba(7, 55, 35, .72)");
-    context.fillStyle = wash;
-    context.fillRect(0, 0, width, height);
-
-    context.fillStyle = COLORS.green;
-    context.fillRect(0, 0, width, 180);
-    context.fillStyle = COLORS.yellow;
-    context.fillRect(0, 180, width, 10);
-    drawBrandLogo(context, brandImages.logo, 45, 18, 144);
-    drawSmallType(context, "HACKER HOUSE GOA", 222, 76, COLORS.cream);
-    context.font = '600 36px "Fraunces", Georgia, serif';
-    context.textAlign = "left";
-    context.fillStyle = COLORS.yellow;
-    context.fillText("28—31 OCT 2026", 222, 126);
-    drawSmallType(context, "#FrameInGoa", 1350, 76, COLORS.cream, "right");
-
-    context.strokeStyle = COLORS.pink;
-    context.lineWidth = 12;
-    context.strokeRect(40, 40, width - 80, height - 80);
-    drawDots(context, 92, 226, 7, COLORS.pink);
-    drawDots(context, 92, 1232, 7, COLORS.pink);
-
-    context.fillStyle = "rgba(7, 55, 35, .92)";
-    roundedRect(context, 88, 1080, 1224, 225, 8);
-    context.fill();
-    context.fillStyle = COLORS.pink;
-    context.fillRect(88, 1080, 18, 225);
-    if (brandImages.banner) {
-      drawContain(
-        context,
-        brandImages.banner,
-        1070,
-        1100,
-        210,
-        175,
-        COLORS.green,
-      );
-      context.strokeStyle = COLORS.pink;
-      context.lineWidth = 3;
-      context.strokeRect(1070, 1100, 210, 175);
-    }
-    drawSmallType(context, "HACKER HOUSE / GOA, INDIA", 145, 1150, COLORS.lime);
-    context.fillStyle = COLORS.cream;
-    context.font = '700 72px "Fraunces", Georgia, serif';
-    context.textAlign = "left";
-    context.fillText("FRAME IN GOA", 145, 1235);
-    drawSmallType(context, "#FrameInGoa", 1035, 1270, COLORS.yellow, "right");
+  if (format === "circle") {
+    renderCircleAvatar(
+      context,
+      photo,
+      name,
+      role,
+      builderTitle,
+      brandImages,
+      crop,
+      width,
+      height,
+    );
     return;
   }
+
+  if (format === "frame") {
+    renderProfileFrame(
+      context,
+      photo,
+      name,
+      role,
+      builderTitle,
+      brandImages,
+      crop,
+      width,
+      height,
+    );
+    return;
+  }
+
 
   context.fillStyle = COLORS.cream;
   context.fillRect(0, 0, width, height);
@@ -757,9 +1192,11 @@ function App() {
       const anchor = document.createElement("a");
       anchor.href = href;
       anchor.download =
-        format === "frame"
-          ? "hacker-house-goa-2026-frame.png"
-          : "hacker-house-goa-2026-builder-card.png";
+        format === "card"
+          ? "hacker-house-goa-2026-builder-card.png"
+          : format === "circle"
+            ? "hacker-house-goa-2026-circle-avatar.png"
+            : "hacker-house-goa-2026-frame.png";
       anchor.click();
       URL.revokeObjectURL(href);
       setNotice("Saved to your downloads. Keep it close.");
@@ -785,7 +1222,7 @@ function App() {
   };
 
   const hasCardDetails =
-    format === "frame" || Boolean(name.trim() && role.trim());
+    format !== "card" || Boolean(name.trim() && role.trim());
   const builderTitle = getBuilderTitle(role);
 
   return (
@@ -964,8 +1401,10 @@ function App() {
                 </div>
                 <span className="crop-format-tag">
                   {format === "frame"
-                    ? "1:1 profile"
-                    : "portrait photo / wide ID"}
+                    ? "1:1 square frame"
+                    : format === "circle"
+                      ? "1:1 circular avatar"
+                      : "portrait photo / wide ID"}
                 </span>
               </div>
               <div
@@ -976,7 +1415,7 @@ function App() {
                 onPointerUp={finishCropPointer}
                 onPointerCancel={finishCropPointer}
                 role="application"
-                aria-label={`${format === "frame" ? "Square profile frame" : "Wide builder card"} crop viewport. Drag the photo to reposition it.`}
+                aria-label={`${format === "frame" ? "Square profile frame" : format === "circle" ? "Circular profile avatar" : "Wide builder card"} crop viewport. Drag the photo to reposition it.`}
                 data-testid="crop-viewport"
               >
                 <img
@@ -987,8 +1426,19 @@ function App() {
                   draggable={false}
                 />
                 <span className="crop-boundary" aria-hidden="true" />
+                {(format === "frame" || format === "circle") && (
+                  <span
+                    className="crop-circle-guide"
+                    aria-hidden="true"
+                    title="X / Twitter circular avatar area"
+                  />
+                )}
                 <span className="crop-format-label">
-                  {format === "frame" ? "PROFILE FRAME" : "BUILDER ID PHOTO"}
+                  {format === "frame"
+                    ? "SQUARE PROFILE FRAME"
+                    : format === "circle"
+                      ? "CIRCULAR AVATAR BADGE"
+                      : "BUILDER ID PHOTO"}
                 </span>
                 <span className="crop-drag-affordance">
                   <Move size={14} />{" "}
@@ -1115,9 +1565,26 @@ function App() {
             >
               <span className="format-glyph">A</span>
               <span>
-                <span className="format-name">Profile frame</span>
+                <span className="format-name">Square profile frame</span>
                 <span className="format-description">
-                  Square, loud, ready for your profile.
+                  1:1 square frame with coastal waves & geo-coordinates.
+                </span>
+              </span>
+              <Check className="check-mark" size={17} />
+            </button>
+            <button
+              type="button"
+              className={`format-option${format === "circle" ? " is-selected" : ""}`}
+              onClick={() => changeFormat("circle")}
+              role="radio"
+              aria-checked={format === "circle"}
+              data-testid="button-format-circle"
+            >
+              <span className="format-glyph circle">B</span>
+              <span>
+                <span className="format-name">Circular profile avatar</span>
+                <span className="format-description">
+                  1:1 concentric circle badge tailored for X, Telegram & Discord.
                 </span>
               </span>
               <Check className="check-mark" size={17} />
@@ -1130,7 +1597,7 @@ function App() {
               aria-checked={format === "card"}
               data-testid="button-format-card"
             >
-              <span className="format-glyph card">B</span>
+              <span className="format-glyph card">C</span>
               <span>
                 <span className="format-name">Builder ID card</span>
                 <span className="format-description">
@@ -1185,8 +1652,10 @@ function App() {
 
           <p className="helper-text">
             {format === "frame"
-              ? "Your square crop becomes the full profile frame, with the Goa signal built around it."
-              : "Your details stay in this browser and are painted into the image only when you export."}
+              ? "Your square crop becomes the full profile frame with coastal wave ribbons & Goa coordinates."
+              : format === "circle"
+                ? "Your photo is framed inside concentric coastal avatar rings tailored for X, Telegram & Discord."
+                : "Your portrait crop is placed on the left side of the official wide Builder ID card."}
           </p>
         </aside>
 

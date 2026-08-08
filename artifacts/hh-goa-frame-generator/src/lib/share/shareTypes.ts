@@ -1,4 +1,4 @@
-export type ShareFormat = "frame" | "card";
+export type ShareFormat = "frame" | "circle" | "card";
 
 export type ShareProviderType = "x" | "linkedin" | "bluesky";
 

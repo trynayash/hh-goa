@@ -650,6 +650,16 @@
   top: 50%;
 }
 
+.crop-circle-guide {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 228, 0, 0.75);
+  box-shadow: 0 0 0 9999px rgba(5, 25, 14, 0.38);
+  pointer-events: none;
+  z-index: 2;
+}
+
 .crop-format-label,
 .crop-drag-affordance {
   position: absolute;
@@ -856,6 +866,13 @@
   color: hsl(var(--primary));
   font-family: var(--app-font-mono);
   font-size: 11px;
+}
+
+.format-glyph.circle {
+  border-radius: 50%;
+  height: 38px;
+  width: 38px;
+  justify-self: center;
 }
 
 .format-glyph.card {

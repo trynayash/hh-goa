@@ -8,7 +8,7 @@ export function getShareText(options: ShareOptions): string {
 export function getCleanCaption(options: ShareOptions): string {
   const { format, name, role, builderTitle } = options;
 
-  if (format === "frame") {
+  if (format === "frame" || format === "circle") {
     return (
       `Happy to join the Hacker House Goa 2026 community! Excited to connect and build alongside incredible minds. ${HASHTAG}\n\n` +
       `Generate your frame & ID card: ${APP_URL}\n` +

@@ -1,7 +1,12 @@
 import type { ShareFormat } from "./shareTypes";
 
 export function sanitizeFilename(name: string | undefined, format: ShareFormat): string {
-  const prefix = format === "frame" ? "hh-goa-frame" : "hh-goa-builder-id";
+  const prefix =
+    format === "card"
+      ? "hh-goa-builder-id"
+      : format === "circle"
+        ? "hh-goa-circle-avatar"
+        : "hh-goa-frame";
 
   if (!name || !name.trim()) {
     return `${prefix}.png`;
