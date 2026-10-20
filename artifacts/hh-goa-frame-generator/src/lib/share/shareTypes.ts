@@ -1,6 +1,6 @@
 export type ShareFormat = "frame" | "circle" | "card";
 
-export type ShareProviderType = "x" | "linkedin" | "bluesky";
+export type ShareProviderType = "x" | "bluesky";
 
 export interface ShareOptions {
   format: ShareFormat;
