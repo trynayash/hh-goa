@@ -1,6 +1,6 @@
 # Share Module Documentation & Architecture
 
-This directory contains the production-grade, popup-free **Share on X** system for the HH Goa 2026 Frame & Builder ID Generator.
+This directory contains the popup-free **Share on X** code for the HH Goa 2026 Frame & Builder ID Generator.
 
 ## Seamless Browser Security Architecture
 
